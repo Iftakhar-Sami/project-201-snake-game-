@@ -79,16 +79,24 @@ void process_input(Snake& snake) {
 void move_snake(Snake& snake, SDL_Rect& rect) {
     switch (snake.direction) {
         case UP:
-            rect.y -= 10;
+            if(rect.y<=-10) rect.y= HEIGHT-10;
+            else
+                rect.y -= 10;
             break;
         case DOWN:
-            rect.y += 10;
+            if (rect.y >= HEIGHT -10)  rect.y=-10;
+            else
+                rect.y += 10;
             break;
         case LEFT:
-            rect.x -= 10;
+            if(rect.x<= -10) rect.x = WIDTH -10;
+            else
+                rect.x -= 10;
             break;
         case RIGHT:
-            rect.x += 10;
+            if(rect.x>= WIDTH-10) rect.x = -10;
+            else
+                rect.x += 10;
             break;
     }
 
