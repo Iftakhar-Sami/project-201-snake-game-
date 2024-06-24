@@ -1,7 +1,8 @@
+#include<vector>
 #include<iostream>
 #include<SDL2/SDL.h>
 #include "constants.h"
-#include<vector>
+
 #undef main
 
 using namespace std;
@@ -12,12 +13,19 @@ enum Direction { UP, DOWN, LEFT, RIGHT };
 
 struct Snake {
     Direction direction;
+    vector<SDL_Rect> segments;
 };
 
 
 float last_frame_time=0;
 
-SDL_Rect moving_rect{WIDTH/2,HEIGHT/2,20,20};
+
+void initialize_snake(Snake& snake) {
+    snake.direction = RIGHT;
+    SDL_Rect initial_segment = {WIDTH / 2, HEIGHT / 2, 20, 20};
+    snake.segments.push_back(initial_segment);
+}
+//SDL_Rect moving_rect{WIDTH/2,HEIGHT/2,20,20};
 
 int game_is_running = 0;
 SDL_Window* window = NULL;
@@ -58,8 +66,17 @@ void initialize_food(Food & food){
     food.rect.y = rand() % (HEIGHT - food.rect.h);
 }
 
+
+
 int collision(const SDL_Rect &a , const SDL_Rect &b) {
     return SDL_HasIntersection(&a,&b);
+}
+
+
+
+void grow_snake(Snake& snake) {
+    SDL_Rect new_segment = snake.segments.back();
+    snake.segments.push_back(new_segment);
 }
 
 
@@ -92,36 +109,47 @@ void process_input(Snake& snake) {
     }
 }
 
-void move_snake(const Snake& snake, SDL_Rect& rect) {
-    switch (snake.direction) {
+void move_snake(Snake& snake) {
+   
+
+    for (int i = snake.segments.size() - 1; i > 0; --i) {
+        snake.segments[i] = snake.segments[i - 1];
+    }
+
+
+    SDL_Rect& head = snake.segments[0];
+
+    switch (snake.direction) {    
         case UP:
-            if(rect.y<=-10) rect.y= HEIGHT-10;
+            if(head.y<=-10) head.y= HEIGHT-10;
             else
-                rect.y -= 10;
+                head.y -= 10;
             break;
         case DOWN:
-            if (rect.y >= HEIGHT -10)  rect.y=-10;
+            if (head.y >= HEIGHT -10)  head.y=-10;
             else
-                rect.y += 10;
+                head.y += 10;
             break;
         case LEFT:
-            if(rect.x<= -10) rect.x = WIDTH -10;
+            if(head.x<= -10) head.x = WIDTH -10;
             else
-                rect.x -= 10;
+                head.x -= 10;
             break;
         case RIGHT:
-            if(rect.x>= WIDTH-10) rect.x = -10;
+            if(head.x>= WIDTH-10) head.x = -10;
             else
-                rect.x += 10;
+                head.x += 10;
             break;
     }
 
     
 }
 
-void render(const Snake& snake, SDL_Rect& rect) {
+void render(const Snake& snake) {
     SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
-    SDL_RenderFillRect(renderer, &rect);
+    for(int i= 0; i<snake.segments.size();i++){
+        SDL_RenderFillRect(renderer, &snake.segments[i]);
+    }    
 }
 
 
@@ -138,21 +166,24 @@ int main () {
 
     game_is_running = initialize_window();
     Snake snake;
-    snake.direction =RIGHT;
+    initialize_snake(snake);
+
     Food food;
     initialize_food(food);
 
     while(game_is_running){
         process_input(snake);
-        move_snake(snake,moving_rect);
+        move_snake(snake);
 
-        if(collision(food.rect,moving_rect))
+        if(collision(food.rect,snake.segments[0])){
             initialize_food(food);
+            grow_snake(snake);
+        }    
 
         SDL_SetRenderDrawColor(renderer,0,0,0,255);
         SDL_RenderClear(renderer);
 
-        render(snake,moving_rect);
+        render(snake);
 
         SDL_SetRenderDrawColor(renderer,255,255,255,255);
         SDL_RenderFillRect(renderer,&food.rect);
