@@ -46,6 +46,22 @@ int initialize_window (){
 
 }
 
+struct Food {
+    SDL_Rect rect;
+};
+
+
+void initialize_food(Food & food){
+    food.rect.h = 20;
+    food.rect.w = 20;
+    food.rect.x = rand() % (WIDTH- food.rect.w);
+    food.rect.y = rand() % (HEIGHT - food.rect.h);
+}
+
+int collision(const SDL_Rect &a , const SDL_Rect &b) {
+    return SDL_HasIntersection(&a,&b);
+}
+
 
 void process_input(Snake& snake) {
     SDL_Event event;
@@ -76,7 +92,7 @@ void process_input(Snake& snake) {
     }
 }
 
-void move_snake(Snake& snake, SDL_Rect& rect) {
+void move_snake(const Snake& snake, SDL_Rect& rect) {
     switch (snake.direction) {
         case UP:
             if(rect.y<=-10) rect.y= HEIGHT-10;
@@ -123,15 +139,24 @@ int main () {
     game_is_running = initialize_window();
     Snake snake;
     snake.direction =RIGHT;
+    Food food;
+    initialize_food(food);
 
     while(game_is_running){
         process_input(snake);
         move_snake(snake,moving_rect);
-        
+
+        if(collision(food.rect,moving_rect))
+            initialize_food(food);
+
         SDL_SetRenderDrawColor(renderer,0,0,0,255);
         SDL_RenderClear(renderer);
 
         render(snake,moving_rect);
+
+        SDL_SetRenderDrawColor(renderer,255,255,255,255);
+        SDL_RenderFillRect(renderer,&food.rect);
+        
 
         SDL_RenderPresent(renderer);
         SDL_Delay(33);
