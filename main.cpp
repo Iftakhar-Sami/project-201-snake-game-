@@ -2,6 +2,8 @@
 #include<iostream>
 #include<SDL2/SDL.h>
 #include "constants.h"
+#include<SDL2/SDL_ttf.h>
+#include<string>
 
 #undef main
 
@@ -10,6 +12,7 @@ using namespace std;
 enum Direction { UP, DOWN, LEFT, RIGHT };
 
 
+int score = 0;
 
 struct Snake {
     Direction direction;
@@ -20,6 +23,7 @@ struct Snake {
 void grow_snake(Snake& snake) {
     SDL_Rect new_segment = snake.segments.back();
     snake.segments.push_back(new_segment);
+    score+=10;
 }
 
 void initialize_snake(Snake& snake) {
@@ -38,6 +42,8 @@ int game_is_running = 0;
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
 int last_time= 0;
+TTF_Font* font = NULL;
+
 
 
 
@@ -48,13 +54,18 @@ int initialize_window (){
         return 0;
     }
 
+    if (TTF_Init() == -1) {
+        fprintf(stderr,"error initializing the ttf");
+        return 0;
+    }
+    
     window = SDL_CreateWindow("SNake game",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,WIDTH,HEIGHT,SDL_WINDOW_BORDERLESS);
     if(!window) {
         fprintf(stderr,"error initializing window");
         return 0;
     }
 
-    renderer =SDL_CreateRenderer(window,-1,0);
+    renderer =SDL_CreateRenderer(window,-1,SDL_RENDERER_ACCELERATED);
     if(!renderer){
         fprintf(stderr,"error initializing the renderer");
         return 0;
@@ -67,7 +78,6 @@ int initialize_window (){
 struct Food {
     SDL_Rect rect;
 };
-
 
 
 
@@ -247,8 +257,29 @@ void render(const Snake& snake) {
         else color = 70;
     }   
     
-    //eyes(snake);
 }
+
+
+
+
+void render_score(SDL_Renderer* renderer, TTF_Font* font, int score) {
+    SDL_Color textColor = {255, 255, 255}; // White color
+    std::string scoreText = "Score: " + std::to_string(score);
+    SDL_Surface* textSurface = TTF_RenderText_Solid(font, scoreText.c_str(), textColor);
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+
+    SDL_Rect textRect;
+    textRect.x = 10; // Position on the screen
+    textRect.y = 10;
+    textRect.w = textSurface->w;
+    textRect.h = textSurface->h;
+
+    SDL_FreeSurface(textSurface);
+
+    SDL_RenderCopy(renderer, textTexture, NULL, &textRect);
+    SDL_DestroyTexture(textTexture);
+}
+
 
 void eye_animation(const Snake &snake, int ticks) {
     int time ;
@@ -257,8 +288,8 @@ void eye_animation(const Snake &snake, int ticks) {
     else
         time= SDL_GetTicks() % 10000;
 
-    if((time>4000 && time<4300)||(time>9500 && time <9650)||(time>9750 && time <9900)){
-        SDL_SetRenderDrawColor(renderer,0,210,0,255);
+    if((time>4000 && time<4300)||(time>9300 && time <9500)||(time>9750 && time <9999)){
+        SDL_SetRenderDrawColor(renderer,0,190,0,255);
         eyes(snake);
     }    
     else{
@@ -269,9 +300,10 @@ void eye_animation(const Snake &snake, int ticks) {
 
 
 void destroy_window() {
-
+    TTF_CloseFont(font);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    TTF_Quit();
     SDL_Quit();
 
 }
@@ -285,6 +317,13 @@ int main () {
 
     Food food;
     initialize_food(food,snake);
+
+    font = TTF_OpenFont("extensions/PixeloidSansBold-PKnYD.ttf", 18);
+    
+    if (!font) {
+        fprintf(stderr, "Error loading font: %s\n", TTF_GetError());
+        return 0;
+    }
 
     
 
@@ -316,6 +355,7 @@ int main () {
         SDL_SetRenderDrawColor(renderer,255,255,255,255);
         SDL_RenderFillRect(renderer,&food.rect);
         
+        render_score(renderer, font, score);
 
         SDL_RenderPresent(renderer);
         SDL_Delay(33);
